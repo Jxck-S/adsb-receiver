@@ -66,6 +66,7 @@ When setting up the portal you will have to choose between a lite or advanced in
 * Fly Italy ADS-B Feeder Client:  https://flyitalyadsb.com
 * OpenSky Feeder Client:          https://opensky-network.org
 * Plane Finder ADS-B Client:      https://planefinder.net
+* TheAirTraffic Feeder Client:    https://theairtraffic.com
 
 ### Extras
 

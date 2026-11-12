@@ -288,6 +288,16 @@ else
 fi
 
 
+# TheAirTraffic
+if [[ -f /lib/systemd/system/theairtraffic-feed.service && -f /lib/systemd/system/theairtraffic-mlat.service ]]; then
+    echo "TheAirTraffic Feeder (reinstall)" >> "${RECEIVER_ROOT_DIRECTORY}/feeder_choices.txt"
+    feeder_list=("${feeder_list[@]}" 'TheAirTraffic Feeder (reinstall/update)' '' OFF)
+else
+    echo "TheAirTraffic Feeder" >> "${RECEIVER_ROOT_DIRECTORY}/feeder_choices.txt"
+    feeder_list=("${feeder_list[@]}" 'TheAirTraffic Feeder' '' OFF)
+fi
+
+
 whiptail --backtitle "${RECEIVER_PROJECT_TITLE}" \
          --title "Client Installation Options" \
          --checklist \
@@ -513,6 +523,9 @@ if [[ -s "${RECEIVER_ROOT_DIRECTORY}/feeder_choices.txt" ]]; then
                 ;;
             "Plane Finder Client"*)
                 run_installer "feeders/planefinder.sh"
+                ;;
+            "TheAirTraffic Feeder"*)
+                run_installer "feeders/theairtraffic.sh"
                 ;;
         esac
     done < "${RECEIVER_ROOT_DIRECTORY}/feeder_choices.txt"
