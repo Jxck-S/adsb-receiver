@@ -7,18 +7,18 @@ source $RECEIVER_BASH_DIRECTORY/functions.sh
 
 clear
 log_project_title
-log_title_heading "Setting up the TheAirTraffic client"
+log_title_heading "Setting up the TheAirTraffic feeder client"
 log_title_message "------------------------------------------------------------------------------"
 if ! whiptail --backtitle "${RECEIVER_PROJECT_TITLE}" \
               --title "TheAirTraffic Feeder Client Setup" \
-              --yesno "The TheAirTraffic feeder client takes data from a local dump1090 or readsb instance and shares this with TheAirTraffic. For more information please see their website:\n\n  https://theairtraffic.com/how-to-feed\n\nContinue setup by installing the TheAirTraffic feeder client?" \
+              --yesno "The TheAirTraffic feeder takes data from a local dump1090 or readsb instance and shares this with TheAirTraffic. For more information please see their website:\n\n  https://theairtraffic.com/how-to-feed\n\nContinue setup by installing the TheAirTraffic feeder?" \
               13 78; then
     echo ""
     log_alert_heading "INSTALLATION HALTED"
     log_alert_message "Setup has been halted at the request of the user"
     echo ""
     log_title_message "------------------------------------------------------------------------------"
-    log_title_heading "TheAirTraffic client setup halted"
+    log_title_heading "TheAirTraffic feeder setup halted"
     echo ""
     exit 1
 fi
@@ -26,7 +26,7 @@ fi
 
 ## CHECK FOR PREREQUISITE PACKAGES
 
-log_heading "Installing packages needed to fulfill TheAirTraffic client dependencies"
+log_heading "Installing packages needed by the TheAirTraffic feeder"
 
 check_package net-tools
 check_package wget
@@ -34,7 +34,7 @@ check_package wget
 
 ## DOWNLOAD AND EXECUTE THE THEAIRTRAFFIC CLIENT INSTALL SCRIPT
 
-log_heading "Begining the TheAirTraffic client installation process"
+log_heading "Beginning the TheAirTraffic feeder installation process"
 
 log_message "Informing the user of how the installation process will work"
 whiptail --backtitle "${RECEIVER_PROJECT_TITLE}" \
@@ -51,11 +51,11 @@ fi
 log_message "Entering the TheAirTraffic build directory"
 cd $RECEIVER_BUILD_DIRECTORY/theairtraffic
 
-log_message "Downloading the TheAirTraffic client installation script"
+log_message "Downloading the TheAirTraffic feeder installation script"
 echo ""
 wget -v -O $RECEIVER_BUILD_DIRECTORY/theairtraffic/install.sh https://raw.githubusercontent.com/TheAirTraffic/tat-feeder/master/install.sh 2>&1 | log_pipe
 
-log_message "Executing the TheAirTraffic client installation script"
+log_message "Executing the TheAirTraffic feeder installation script"
 echo ""
 sudo bash $RECEIVER_BUILD_DIRECTORY/theairtraffic/install.sh
 echo ""
@@ -65,10 +65,28 @@ echo ""
 
 log_heading "Checking if the receiver is now feeding TheAirTraffic"
 
-feed_ip=`getent hosts feed.theairtraffic.com | awk '{ print $1; exit }'`
-log_message "Checking for connections on ports 30004 and 31090 to IP address ${feed_ip}"
-netstat_output=`netstat -t -n | grep -E '30004|31090'`
-if [[ -n $feed_ip && $netstat_output == *"${feed_ip}:30004 ESTABLISHED"* && $netstat_output == *"${feed_ip}:31090 ESTABLISHED"* ]]; then
+log_message "Waiting up to 30 seconds for connections to feed.theairtraffic.com on ports 30004 and 31090"
+feed_ips=`getent ahosts feed.theairtraffic.com | awk '{ print $1 }' | sort -u`
+feed_connected="false"
+for attempt in {1..6}; do
+    netstat_output=`netstat -t -n`
+    adsb_connected="false"
+    mlat_connected="false"
+    for feed_ip in $feed_ips; do
+        if echo "${netstat_output}" | grep -qE "[[:space:]]${feed_ip//./\\.}:30004[[:space:]]+ESTABLISHED"; then
+            adsb_connected="true"
+        fi
+        if echo "${netstat_output}" | grep -qE "[[:space:]]${feed_ip//./\\.}:31090[[:space:]]+ESTABLISHED"; then
+            mlat_connected="true"
+        fi
+    done
+    if [[ "${adsb_connected}" == "true" && "${mlat_connected}" == "true" ]]; then
+        feed_connected="true"
+        break
+    fi
+    sleep 5
+done
+if [[ "${feed_connected}" == "true" ]]; then
     log_message "This device appears to be connected to TheAirTraffic"
 else
     echo ""
@@ -84,7 +102,7 @@ fi
 
 whiptail --backtitle "${RECEIVER_PROJECT_TITLE}" \
          --title "TheAirTraffic Client Setup Complete" \
-         --msgbox "Setup of the TheAirTraffic client is now complete. You can check your feeder status at https://theairtraffic.com/myip." \
+         --msgbox "Setup of the TheAirTraffic feeder is now complete. You can check your feeder status at https://theairtraffic.com/myip." \
          12 78
 
 
@@ -95,7 +113,7 @@ cd $RECEIVER_ROOT_DIRECTORY
 
 echo ""
 log_title_message "------------------------------------------------------------------------------"
-log_title_heading "TheAirTraffic client setup is complete"
+log_title_heading "TheAirTraffic feeder setup is complete"
 echo ""
 read -p "Press enter to continue..." discard
 
